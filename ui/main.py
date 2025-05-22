@@ -63,7 +63,7 @@ class RuniqApp:
                 self.write_output(result.stderr, style="stderr")
             if not result.stdout and not result.stderr:
                 self.write_output("(kein Output)", style="stdout")
-            self.output_text.configure(state="disabled")
+            self.output_text.configure(padx=10, pady=4)
         except Exception as e:
             self.write_output(str(e), style="stderr")
 
@@ -114,10 +114,19 @@ class RuniqApp:
         legend_frame = ttk.Frame(self.root)
         legend_frame.pack(pady=(0, 5), fill="x")
 
+        self.active_filter = None
         for ext, props in STYLE_MAP.items():
-            legend = tk.Label(legend_frame, text=props['tooltip'], bg=props['color'], fg="white",
-                              font=("Segoe UI", 9), padx=5, pady=2)
-            legend.pack(side="left", padx=5)
+            legend = tk.Label(legend_frame,
+                              text=props['tooltip'] + " (Filter)",
+                              bg=props['color'],
+                              fg="white",
+                              font=("Segoe UI", 10, "bold"),
+                              relief="raised",
+                              bd=2,
+                              padx=6,
+                              pady=4)
+            legend.pack(side="left", padx=5, pady=5)
+            legend.bind("<Button-1>", lambda e, ext=ext, lbl=legend: self.filter_by_type(ext, lbl))
 
         container = ttk.Frame(self.root)
         container.pack(pady=5)
@@ -168,10 +177,22 @@ class RuniqApp:
     def apply_filter(self):
         query = self.search_var.get().lower().strip()
         for name, btn, ext in self.buttons:
-            if query in name:
-                btn.pack(pady=2)
-            else:
-                btn.pack_forget()
+            is_visible = query in name
+            if self.active_filter and ext != self.active_filter:
+                is_visible = False
+            btn.pack(pady=2) if is_visible else btn.pack_forget()
+
+    def filter_by_type(self, ext, label):
+        if self.active_filter == ext:
+            self.active_filter = None
+            label.config(relief="raised", bd=2)
+        else:
+            self.active_filter = ext
+            # Reset all labels first
+            for widget in label.master.winfo_children():
+                widget.config(relief="raised", bd=2)
+            label.config(relief="sunken", bd=3)
+        self.apply_filter()
 
     def list_scripts_grouped(self):
         allowed = STYLE_MAP.keys()
