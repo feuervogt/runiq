@@ -12,6 +12,25 @@ STYLE_MAP = {
     '.bat':  {'color': '#F97316', 'tooltip': 'Batch-Datei 🧱'},
 }
 
+# Farbdefinitionen
+LIGHT_BUTTON_BG = "#D3D3D3"
+LIGHT_BUTTON_FG = "#000000"
+LIGHT_BUTTON_ACTIVE = "#B0B0B0"
+
+LIGHT_ACTION_BG = "#005C4B"
+LIGHT_ACTION_FG = "#FFFFFF"
+LIGHT_ACTION_ACTIVE = "#004238"
+
+DARK_BUTTON_BG = "#4B5563"
+DARK_BUTTON_FG = "#F9FAFB"
+DARK_BUTTON_ACTIVE = "#6B7280"
+
+DARK_ACTION_BG = "#047857"
+DARK_ACTION_FG = "#F9FAFB"
+DARK_ACTION_ACTIVE = "#065F46"
+
+BUTTON_BORDER = "#808080"
+
 class RuniqApp:
     def __init__(self, root):
         self.root = root
@@ -25,15 +44,38 @@ class RuniqApp:
         self.update_theme()
 
     def update_theme(self):
-        self.colors = {
-            "bg": "#1F2937" if self.dark_mode else "#F3F4F6",
-            "fg": "#FACC15" if self.dark_mode else "#111827",
-            "text_bg": "#111827" if self.dark_mode else "#F9FAFB",
-            "text_fg": "#F9FAFB" if self.dark_mode else "#1F2937",
-            "stdout": "#10B981",
-            "stderr": "#EF4444",
-            "font": ("Consolas", 10),
-        }
+        if self.dark_mode:
+            self.colors = {
+                "bg": "#1F2937",
+                "fg": "#FACC15",
+                "text_bg": "#111827",
+                "text_fg": "#F9FAFB",
+                "button_bg": DARK_BUTTON_BG,
+                "button_fg": DARK_BUTTON_FG,
+                "button_active": DARK_BUTTON_ACTIVE,
+                "action_bg": DARK_ACTION_BG,
+                "action_fg": DARK_ACTION_FG,
+                "action_active": DARK_ACTION_ACTIVE,
+                "font": ("Consolas", 10),
+                "stdout": "#10B981",
+                "stderr": "#EF4444",
+            }
+        else:
+            self.colors = {
+                "bg": "#F3F4F6",
+                "fg": "#111827",
+                "text_bg": "#F9FAFB",
+                "text_fg": "#1F2937",
+                "button_bg": LIGHT_BUTTON_BG,
+                "button_fg": LIGHT_BUTTON_FG,
+                "button_active": LIGHT_BUTTON_ACTIVE,
+                "action_bg": LIGHT_ACTION_BG,
+                "action_fg": LIGHT_ACTION_FG,
+                "action_active": LIGHT_ACTION_ACTIVE,
+                "font": ("Consolas", 10),
+                "stdout": "#10B981",
+                "stderr": "#EF4444",
+            }
         self.root.configure(bg=self.colors["bg"])
 
     def run_script(self, script_name):
@@ -49,7 +91,7 @@ class RuniqApp:
         elif ext == '.bat':
             cmd = [script_path]
         else:
-            self.write_output("Nicht unterstützter Dateityp.", is_error=True)
+            self.write_output("Nicht unterst\u00fctzter Dateityp.", is_error=True)
             return
 
         try:
@@ -82,21 +124,39 @@ class RuniqApp:
         self.title.configure(background=self.colors["bg"], foreground=self.colors["fg"])
         self.output_label.configure(background=self.colors["bg"], foreground=self.colors["fg"])
         self.output_text.configure(bg=self.colors["text_bg"], fg=self.colors["text_fg"], insertbackground=self.colors["text_fg"])
-        self.toggle_button.configure(bg=self.colors["fg"], fg=self.colors["bg"])
         self.search_label.configure(background=self.colors["bg"], foreground=self.colors["fg"])
+
+        self.toggle_button.configure(
+            bg=self.colors["action_bg"],
+            fg=self.colors["action_fg"],
+            activebackground=self.colors["action_active"]
+        )
+
+        for name, btn, ext in self.buttons:
+            btn.configure(
+                bg=self.colors["button_bg"],
+                fg=self.colors["button_fg"],
+                activebackground=self.colors["button_active"]
+            )
 
     def setup_ui(self):
         self.root.title("Runiq – Script Launcher")
         self.root.geometry("720x860")
         self.root.resizable(False, False)
 
-        self.title = ttk.Label(self.root, text="Verfügbare Skripte", font=("Segoe UI", 14, "bold"))
+        self.title = ttk.Label(self.root, text="Verf\u00fcgbare Skripte", font=("Segoe UI", 14, "bold"))
         self.title.pack(pady=10)
 
-        self.toggle_button = tk.Button(self.root, text="🌃 Dark Mode", command=self.toggle_mode)
+        self.toggle_button = tk.Button(
+            self.root, text="🌃 Dark Mode", command=self.toggle_mode,
+            bg=self.colors["action_bg"], fg=self.colors["action_fg"],
+            activebackground=self.colors["action_active"],
+            relief="raised", bd=2,
+            font=("Segoe UI", 10, "bold"),
+            padx=8, pady=4
+        )
         self.toggle_button.pack(anchor="ne", padx=10)
 
-        # Suchfeld
         search_frame = ttk.Frame(self.root)
         search_frame.pack(pady=(0, 10), anchor='w')
 
@@ -110,7 +170,6 @@ class RuniqApp:
                                 font=("Segoe UI", 10), relief="solid")
         search_entry.pack(side="left", padx=5)
 
-        # Legende
         legend_frame = ttk.Frame(self.root)
         legend_frame.pack(pady=(0, 5), fill="x")
 
@@ -128,8 +187,8 @@ class RuniqApp:
             legend.pack(side="left", padx=5, pady=5)
             legend.bind("<Button-1>", lambda e, ext=ext, lbl=legend: self.filter_by_type(ext, lbl))
 
-        container = ttk.Frame(self.root)
-        container.pack(pady=5)
+        container = tk.Frame(self.root, bg=self.colors["bg"])
+        container.pack(pady=5, fill='x')
 
         scripts_by_type = self.list_scripts_grouped()
         for ext in sorted(STYLE_MAP):
@@ -139,11 +198,13 @@ class RuniqApp:
                 btn = tk.Button(container,
                                 text=script_name,
                                 width=50,
-                                bg=STYLE_MAP[ext]['color'],
-                                fg="white",
-                                activebackground="#1E40AF",
-                                font=("Segoe UI", 10, "bold"),
+                                bg=self.colors["button_bg"],
+                                fg=self.colors["button_fg"],
+                                activebackground=self.colors["button_active"],
                                 relief="raised",
+                                bd=2,
+                                font=("Segoe UI", 10),
+                                highlightbackground=BUTTON_BORDER,
                                 command=lambda s=script: self.run_script(s))
                 btn.pack(pady=2)
                 self.create_tooltip(btn, STYLE_MAP[ext]['tooltip'])
@@ -188,7 +249,6 @@ class RuniqApp:
             label.config(relief="raised", bd=2)
         else:
             self.active_filter = ext
-            # Reset all labels first
             for widget in label.master.winfo_children():
                 widget.config(relief="raised", bd=2)
             label.config(relief="sunken", bd=3)
@@ -221,7 +281,6 @@ class RuniqApp:
 
         widget.bind("<Enter>", enter)
         widget.bind("<Leave>", leave)
-
 
 if __name__ == "__main__":
     root = tk.Tk()
